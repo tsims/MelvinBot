@@ -2,10 +2,9 @@ package dynamo
 
 import (
 	"fmt"
-	"log"
-	"strconv"
 	"sync"
-	"time"
+
+	stats "MelvinBot/src/stats"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -21,57 +20,88 @@ type DynamoClient struct {
 	lock   *sync.Mutex
 }
 
-type Pin struct {
-	Number      int
-	Author      string
-	Message     string
-	Time        time.Time
-	MessageLink string
-}
-
-func NewDynamoSession() DynamoClient {
-	sess, err := session.NewSession()
+func NewDynamoSession() (DynamoClient, error) {
+	sess, err := session.NewSession(&aws.Config{
+		Region: aws.String("us-east-2"),
+	})
 	if err != nil {
-		log.Fatal("failed to create dynamo session", err)
+		return DynamoClient{}, err
 	}
+
+	ddb := dynamodb.New(sess)
 
 	return DynamoClient{
-		client: dynamodb.New(sess),
+		client: ddb,
 		lock:   &sync.Mutex{},
-	}
+	}, nil
 }
 
 const (
-	tableName string = "MelvinPins"
-	partKey   string = "PinNumber"
+	statsTable string = "stats"
+	partKey    string = "guild"
+	statsKey   string = "stats"
 )
 
-func (d *DynamoClient) GetPin(number int) (Pin, error) {
+func (d *DynamoClient) GetStatsOnAllGuilds() error {
 
-	pinNum := strconv.Itoa(number)
-	input := dynamodb.GetItemInput{
-		TableName: aws.String(tableName),
-		Key: map[string]*dynamodb.AttributeValue{
-			partKey: {
-				N: aws.String(pinNum),
-			},
-		},
-	}
+	items, err := d.client.Scan(&dynamodb.ScanInput{
+		TableName: aws.String(statsTable)})
 
-	pinItem, err := d.client.GetItem(&input)
 	if err != nil {
-		return Pin{}, err
+		return fmt.Errorf("couldnt scan dynamo: %v", err)
 	}
 
-	if pinItem.Item == nil {
-		return Pin{}, fmt.Errorf("Pin does not exist at number %d", number)
+	statsHolder := map[string]*stats.Stats{}
+
+	for _, item := range items.Items {
+		var guild string
+		err := dynamodbattribute.Unmarshal(item[partKey], &guild)
+		if err != nil {
+			return fmt.Errorf("couldnt unmarshal struct %s: %v", partKey, err)
+		}
+		var statsUnmarshal map[string]int
+		err = dynamodbattribute.Unmarshal(item[statsKey], &statsUnmarshal)
+		if err != nil {
+			return fmt.Errorf("couldnt unmarshal struct %s: %v", statsKey, err)
+		}
+		statsStruct := stats.Stats{
+			StatMap: statsUnmarshal,
+			Lock:    &sync.Mutex{},
+		}
+		statsHolder[guild] = &statsStruct
 	}
 
-	pin := Pin{}
-	err = dynamodbattribute.UnmarshalMap(pinItem.Item, &pin)
-	if err != nil {
-		return Pin{}, err
+	if len(statsHolder) != 0 {
+		stats.StatsPerGuild = statsHolder
 	}
 
-	return pin, nil
+	return nil
+}
+
+func (d *DynamoClient) PutStatsOnAllGuilds() error {
+
+	input := map[string]*dynamodb.AttributeValue{}
+	for guild, stats := range stats.StatsPerGuild {
+
+		av, err := dynamodbattribute.Marshal(stats.StatMap)
+		if err != nil {
+			return fmt.Errorf("couldnt marshal struct: %v", err)
+		}
+		guildStr, err := dynamodbattribute.Marshal(guild)
+		if err != nil {
+			return fmt.Errorf("couldnt marshal struct: %v", err)
+		}
+		input[partKey] = guildStr
+		input[statsKey] = av
+
+		_, err = d.client.PutItem(&dynamodb.PutItemInput{
+			TableName: aws.String(statsTable),
+			Item:      input,
+		})
+		if err != nil {
+			return fmt.Errorf("couldnt put dynamo: %v", err)
+		}
+	}
+
+	return nil
 }

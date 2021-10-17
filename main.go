@@ -11,7 +11,7 @@ import (
 func main() {
 	godotenv.Load()
 	token := os.Getenv("token")
-	bot := discord.NewDiscordSession(token)
+	bot := discord.NewBot(token)
 
 	bot.RunBot()
 

@@ -1,4 +1,4 @@
-package discord
+package stats
 
 import (
 	"fmt"
@@ -9,15 +9,15 @@ import (
 )
 
 type Stats struct {
-	stats map[string]int
-	lock  *sync.Mutex
+	StatMap map[string]int
+	Lock    *sync.Mutex
 }
 
 var StatsPerGuild map[string]*Stats = map[string]*Stats{}
 
 var MelvinIDToUsernameMap sync.Map
 
-func trackStats(s *disc.Session, m *disc.MessageCreate) {
+func TrackStats(s *disc.Session, m *disc.MessageCreate) {
 	if m.Author.ID == s.State.User.ID {
 		return // it me
 	}
@@ -25,30 +25,30 @@ func trackStats(s *disc.Session, m *disc.MessageCreate) {
 	guildStats, ok := StatsPerGuild[m.GuildID]
 	if !ok {
 		guildStats = &Stats{
-			stats: map[string]int{},
-			lock:  &sync.Mutex{},
+			StatMap: map[string]int{},
+			Lock:    &sync.Mutex{},
 		}
 		// What are the chances this races
 		StatsPerGuild[m.GuildID] = guildStats
 	}
 
-	guildStats.lock.Lock()
-	defer guildStats.lock.Unlock()
+	guildStats.Lock.Lock()
+	defer guildStats.Lock.Unlock()
 
 	user, known := MelvinIDToUsernameMap.Load(m.Author.ID)
 	if !known || user != m.Author.Username {
 		MelvinIDToUsernameMap.Store(m.Author.ID, m.Author.Username)
 	}
 
-	_, ok = guildStats.stats[m.Author.ID]
+	_, ok = guildStats.StatMap[m.Author.ID]
 	if ok {
-		guildStats.stats[m.Author.ID]++
+		guildStats.StatMap[m.Author.ID]++
 	} else {
-		guildStats.stats[m.Author.ID] = 1
+		guildStats.StatMap[m.Author.ID] = 1
 	}
 }
 
-func printStats(s *disc.Session, m *disc.MessageCreate) {
+func PrintStats(s *disc.Session, m *disc.MessageCreate) {
 	if m.Author.ID == s.State.User.ID {
 		return // it me
 	}
@@ -63,7 +63,7 @@ func printStats(s *disc.Session, m *disc.MessageCreate) {
 		return
 	}
 
-	guildStats.lock.Lock()
+	guildStats.Lock.Lock()
 
 	// Sort and create stats array
 	type MelvinPosts struct {
@@ -72,7 +72,7 @@ func printStats(s *disc.Session, m *disc.MessageCreate) {
 	}
 
 	sortable := []MelvinPosts{}
-	for melvinID, posts := range guildStats.stats {
+	for melvinID, posts := range guildStats.StatMap {
 		username, ok := MelvinIDToUsernameMap.Load(melvinID)
 		if !ok {
 			continue
@@ -85,7 +85,7 @@ func printStats(s *disc.Session, m *disc.MessageCreate) {
 		sortable = append(sortable, MelvinPosts{name: userString, posts: posts})
 	}
 	// Don't need lock anymore
-	guildStats.lock.Unlock()
+	guildStats.Lock.Unlock()
 
 	sort.Slice(sortable, func(i, j int) bool {
 		return sortable[i].posts > sortable[j].posts

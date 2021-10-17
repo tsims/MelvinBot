@@ -35,12 +35,31 @@ func unpinFromReaction(s *disc.Session, m *disc.MessageReactionRemove) {
 		}
 	}
 
+	// Check if its pinned in the first place
+	var found bool
+	msgs, err := s.ChannelMessagesPinned(m.ChannelID)
+	if err != nil {
+		log.Printf("error checking pinned msgs: %v", err)
+	}
+	for _, pin := range msgs {
+		if pin.ID == msg.ID {
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		return
+	}
+
 	err = s.ChannelMessageUnpin(m.ChannelID, m.MessageID)
 	if err != nil {
 		log.Printf("error unpinning: %v", err)
 	}
-	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Unpinning post: %s: %s", msg.Author.Username, msg.Content))
-	if err != nil {
-		log.Printf("error sending unpin message: %v", err)
+	if err == nil {
+		_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Unpinning post: %s: %s", msg.Author.Username, msg.Content))
+		if err != nil {
+			log.Printf("error sending unpin message: %v", err)
+		}
 	}
 }

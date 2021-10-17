@@ -8,32 +8,46 @@ import (
 	"strings"
 	"syscall"
 
+	dyn "MelvinBot/src/dynamo"
+	"MelvinBot/src/stats"
+
 	disc "github.com/bwmarrin/discordgo"
 )
 
 type Bot struct {
 	discord *disc.Session
+	dynamo  *dyn.DynamoClient
 }
 
-func NewDiscordSession(token string) Bot {
+func NewBot(token string) Bot {
 	discord, err := disc.New("Bot " + token)
 	if err != nil {
 		log.Fatal("could not connect to discord")
 	}
 
-	return Bot{discord}
+	dynamo, err := dyn.NewDynamoSession()
+	if err != nil {
+		log.Fatal("could not connect to dynamo")
+	}
+
+	return Bot{discord, &dynamo}
 }
 
 func (bot Bot) RunBot() {
 
+	err := bot.dynamo.GetStatsOnAllGuilds()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	// Add handlers here
 	bot.discord.AddHandler(monkaS)
-	bot.discord.AddHandler(trackStats)
-	bot.discord.AddHandler(printStats)
+	bot.discord.AddHandler(stats.TrackStats)
+	bot.discord.AddHandler(stats.PrintStats)
 	bot.discord.AddHandler(pinFromReaction)
 	bot.discord.AddHandler(unpinFromReaction)
 
-	err := bot.discord.Open()
+	err = bot.discord.Open()
 	if err != nil {
 		log.Fatal("couldnt open connection", err)
 	}
@@ -43,6 +57,10 @@ func (bot Bot) RunBot() {
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 	<-sc
 
+	err = bot.dynamo.PutStatsOnAllGuilds()
+	if err != nil {
+		log.Printf("failed dynamo put call on shutdown: %v", err)
+	}
 	// Cleanly close down the Discord session.
 	bot.discord.Close()
 }
