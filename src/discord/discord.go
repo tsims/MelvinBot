@@ -26,8 +26,12 @@ func NewDiscordSession(token string) Bot {
 
 func (bot Bot) RunBot() {
 
-	// Add handlers
+	// Add handlers here
 	bot.discord.AddHandler(monkaS)
+	bot.discord.AddHandler(trackStats)
+	bot.discord.AddHandler(printStats)
+	bot.discord.AddHandler(pinFromReaction)
+	bot.discord.AddHandler(unpinFromReaction)
 
 	err := bot.discord.Open()
 	if err != nil {
