@@ -2,7 +2,9 @@ package dynamo
 
 import (
 	"fmt"
+	"log"
 	"sync"
+	"time"
 
 	stats "MelvinBot/src/stats"
 
@@ -104,4 +106,26 @@ func (d *DynamoClient) PutStatsOnAllGuilds() error {
 	}
 
 	return nil
+}
+
+func (d *DynamoClient) PutStatsOnTimer(period time.Duration) chan (bool) {
+	ticker := time.NewTicker(period)
+	StatsDone := make(chan bool)
+	go func() {
+
+		for {
+			select {
+			case <-StatsDone:
+				ticker.Stop()
+				return
+			case <-ticker.C:
+				err := d.PutStatsOnAllGuilds()
+				if err != nil {
+					log.Printf("failed to put stats during ticker: %v", err)
+				}
+			}
+		}
+	}()
+
+	return StatsDone
 }

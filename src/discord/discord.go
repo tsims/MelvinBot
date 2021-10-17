@@ -7,6 +7,7 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+	"time"
 
 	dyn "MelvinBot/src/dynamo"
 	"MelvinBot/src/stats"
@@ -39,6 +40,7 @@ func (bot Bot) RunBot() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	statsChan := bot.dynamo.PutStatsOnTimer(5 * time.Minute)
 
 	// Add handlers here
 	bot.discord.AddHandler(monkaS)
@@ -57,6 +59,10 @@ func (bot Bot) RunBot() {
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 	<-sc
 
+	// End the goroutine that is updating stats
+	statsChan <- true
+
+	// Place stats one last time for consistency
 	err = bot.dynamo.PutStatsOnAllGuilds()
 	if err != nil {
 		log.Printf("failed dynamo put call on shutdown: %v", err)
