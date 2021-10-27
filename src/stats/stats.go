@@ -15,8 +15,6 @@ type Stats struct {
 
 var StatsPerGuild map[string]*Stats = map[string]*Stats{}
 
-var MelvinIDToUsernameMap sync.Map
-
 func TrackStats(s *disc.Session, m *disc.MessageCreate) {
 	if m.Author.ID == s.State.User.ID {
 		return // it me
@@ -35,16 +33,11 @@ func TrackStats(s *disc.Session, m *disc.MessageCreate) {
 	guildStats.Lock.Lock()
 	defer guildStats.Lock.Unlock()
 
-	user, known := MelvinIDToUsernameMap.Load(m.Author.ID)
-	if !known || user != m.Author.Username {
-		MelvinIDToUsernameMap.Store(m.Author.ID, m.Author.Username)
-	}
-
-	_, ok = guildStats.StatMap[m.Author.ID]
+	_, ok = guildStats.StatMap[m.Author.Username]
 	if ok {
-		guildStats.StatMap[m.Author.ID]++
+		guildStats.StatMap[m.Author.Username]++
 	} else {
-		guildStats.StatMap[m.Author.ID] = 1
+		guildStats.StatMap[m.Author.Username] = 1
 	}
 }
 
@@ -72,17 +65,9 @@ func PrintStats(s *disc.Session, m *disc.MessageCreate) {
 	}
 
 	sortable := []MelvinPosts{}
-	for melvinID, posts := range guildStats.StatMap {
-		username, ok := MelvinIDToUsernameMap.Load(melvinID)
-		if !ok {
-			continue
-		}
-		// haha type assertion go brr
-		userString, ok := username.(string)
-		if !ok {
-			continue
-		}
-		sortable = append(sortable, MelvinPosts{name: userString, posts: posts})
+	for username, posts := range guildStats.StatMap {
+
+		sortable = append(sortable, MelvinPosts{name: username, posts: posts})
 	}
 	// Don't need lock anymore
 	guildStats.Lock.Unlock()

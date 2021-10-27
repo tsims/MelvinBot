@@ -40,7 +40,8 @@ func (bot Bot) RunBot() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	statsChan := bot.dynamo.PutStatsOnTimer(5 * time.Minute)
+
+	stopSendingStatsOnTimerChan := bot.dynamo.PutStatsOnTimer(5 * time.Minute)
 
 	// Add handlers here
 	bot.discord.AddHandler(monkaS)
@@ -60,7 +61,7 @@ func (bot Bot) RunBot() {
 	<-sc
 
 	// End the goroutine that is updating stats
-	statsChan <- true
+	stopSendingStatsOnTimerChan <- true
 
 	// Place stats one last time for consistency
 	err = bot.dynamo.PutStatsOnAllGuilds()
