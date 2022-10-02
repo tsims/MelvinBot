@@ -1,6 +1,7 @@
 package discord
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -9,15 +10,16 @@ import (
 	"syscall"
 	"time"
 
-	dyn "MelvinBot/src/dynamo"
 	"MelvinBot/src/stats"
+	"MelvinBot/src/store"
 
 	disc "github.com/bwmarrin/discordgo"
 )
 
 type Bot struct {
-	discord *disc.Session
-	dynamo  *dyn.DynamoClient
+	discord   *disc.Session
+	store     store.Storage
+	statsfile string
 }
 
 func NewBot(token string) Bot {
@@ -26,22 +28,27 @@ func NewBot(token string) Bot {
 		log.Fatal("could not connect to discord")
 	}
 
-	dynamo, err := dyn.NewDynamoSession()
+	statsFile := "/etc/melvinstats"
+	storage, err := store.NewLocalStorage(statsFile)
 	if err != nil {
-		log.Fatal("could not connect to dynamo")
+		log.Fatal("could not get local stats")
 	}
 
-	return Bot{discord, &dynamo}
+	return Bot{discord, storage, statsFile}
 }
 
 func (bot Bot) RunBot() {
 
-	err := bot.dynamo.GetStatsOnAllGuilds()
+	if _, err := os.Stat(bot.statsfile); errors.Is(err, os.ErrNotExist) {
+		bot.store.PutStats()
+	}
+
+	err := bot.store.GetStats()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	stopSendingStatsOnTimerChan := bot.dynamo.PutStatsOnTimer(5 * time.Minute)
+	bot.store.SyncStatsOnTimer(1 * time.Minute)
 
 	// Add handlers here
 	bot.discord.AddHandler(monkaS)
@@ -60,11 +67,8 @@ func (bot Bot) RunBot() {
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 	<-sc
 
-	// End the goroutine that is updating stats
-	stopSendingStatsOnTimerChan <- true
-
 	// Place stats one last time for consistency
-	err = bot.dynamo.PutStatsOnAllGuilds()
+	err = bot.store.PutStats()
 	if err != nil {
 		log.Printf("failed dynamo put call on shutdown: %v", err)
 	}

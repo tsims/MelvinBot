@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	godotenv.Load("/home/nelson/apps/.env")
+	godotenv.Load("/home/nelly/apps/.env")
 	token := os.Getenv("token")
 	bot := discord.NewBot(token)
 	bot.RunBot()
