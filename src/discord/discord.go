@@ -62,6 +62,7 @@ func (bot Bot) RunBot() {
 	bot.discord.AddHandler(tetazoo)
 	bot.discord.AddHandler(glounge)
 	bot.discord.AddHandler(iiwii)
+	bot.discord.AddHandler(lethimcook)
 
 	err = bot.discord.Open()
 	if err != nil {
