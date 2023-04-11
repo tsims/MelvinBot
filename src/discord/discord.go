@@ -59,6 +59,9 @@ func (bot Bot) RunBot() {
 	bot.discord.AddHandler(didSomebodySaySex)
 	bot.discord.AddHandler(thisIsNotADvd)
 	bot.discord.AddHandler(georgeCarlin)
+	bot.discord.AddHandler(tetazoo)
+	bot.discord.AddHandler(glounge)
+	bot.discord.AddHandler(iiwii)
 
 	err = bot.discord.Open()
 	if err != nil {
@@ -135,4 +138,58 @@ func georgeCarlin(s *disc.Session, m *disc.MessageCreate) {
 	}
 
 	s.ChannelMessageSend(m.ChannelID, "RATSHIT BATSHIT DIRTY OLD TWAT 69 ASSHOLES TIED IN A KNOT HOORAY LIZARD SHIT FUCK")
+}
+
+func tetazoo(s *disc.Session, m *disc.MessageCreate) {
+	if m.Author.ID == s.State.User.ID {
+		return // it me
+	}
+
+	if m.GuildID != util.wolfcord_id {
+		return // only for nisha's discord
+	}
+
+	if strings.Contains(strings.ToLower(m.Message.Content), "tetazoo") {
+		s.ChannelMessageSend(m.ChannelID, "TETAZOO IS NOT A HIVEMIND")
+	}
+}
+
+func glounge(s *disc.Session, m *disc.MessageCreate) {
+	if m.Author.ID == s.State.User.ID {
+		return // it me
+	}
+
+	if m.GuildID != util.wolfcord_id {
+		return // only for nisha's discord
+	}
+
+	if strings.Contains(strings.ToLower(m.Message.Content), "where are you") {
+		s.ChannelMessageSend(m.ChannelID, "update tetazoo glounge")
+	}
+}
+
+func iiwii(s *disc.Session, m *disc.MessageCreate) {
+	if m.Author.ID == s.State.User.ID {
+		return // it me
+	}
+
+	if m.Content != "!iiwii" {
+		return
+	}
+
+	s.ChannelMessageSend(m.ChannelID, "it EEEEEEES what it eees")
+}
+
+func lethimcook(s *disc.Session, m *disc.MessageCreate) {
+	if m.Author.ID == s.State.User.ID {
+		return // it me
+	}
+
+	if m.GuildID != util.wolfcord_id {
+		return // only for nisha's discord
+	}
+
+	if (strings.Contains(strings.ToLower(m.Message.Content), "let") && strings.Contains(strings.ToLower(m.Message.Content), "cook")){
+		s.ChannelMessageSend(m.ChannelID, "https://i.kym-cdn.com/entries/icons/original/000/041/943/1aa1blank.png")
+	}
 }
