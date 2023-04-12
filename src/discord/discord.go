@@ -12,6 +12,7 @@ import (
 
 	"MelvinBot/src/stats"
 	"MelvinBot/src/store"
+	utilconst "MelvinBot/src/util"
 
 	disc "github.com/bwmarrin/discordgo"
 )
@@ -99,7 +100,7 @@ func didSomebodySaySex(s *disc.Session, m *disc.MessageCreate) {
 		return // it me
 	}
 
-	if m.GuildID != util.wolfcord_id {
+	if m.GuildID != utilconst.Wolfcord_id {
 		return // only for nisha's discord
 	}
 
@@ -113,7 +114,7 @@ func thisIsNotADvd(s *disc.Session, m *disc.MessageCreate) {
 		return // it me
 	}
 
-	if m.GuildID != util.wolfcord_id {
+	if m.GuildID != utilconst.Wolfcord_id {
 		return // only for nisha's discord
 	}
 
@@ -130,7 +131,7 @@ func georgeCarlin(s *disc.Session, m *disc.MessageCreate) {
 		return // it me
 	}
 
-	if m.GuildID != util.wolfcord_id {
+	if m.GuildID != utilconst.Wolfcord_id {
 		return // only for nisha's discord
 	}
 
@@ -146,7 +147,7 @@ func tetazoo(s *disc.Session, m *disc.MessageCreate) {
 		return // it me
 	}
 
-	if m.GuildID != util.wolfcord_id {
+	if m.GuildID != utilconst.Wolfcord_id {
 		return // only for nisha's discord
 	}
 
@@ -160,7 +161,7 @@ func glounge(s *disc.Session, m *disc.MessageCreate) {
 		return // it me
 	}
 
-	if m.GuildID != util.wolfcord_id {
+	if m.GuildID != utilconst.Wolfcord_id {
 		return // only for nisha's discord
 	}
 
@@ -186,11 +187,11 @@ func lethimcook(s *disc.Session, m *disc.MessageCreate) {
 		return // it me
 	}
 
-	if m.GuildID != util.wolfcord_id {
+	if m.GuildID != utilconst.Wolfcord_id {
 		return // only for nisha's discord
 	}
 
-	if (strings.Contains(strings.ToLower(m.Message.Content), "let") && strings.Contains(strings.ToLower(m.Message.Content), "cook")){
+	if strings.Contains(strings.ToLower(m.Message.Content), "let") && strings.Contains(strings.ToLower(m.Message.Content), "cook") {
 		s.ChannelMessageSend(m.ChannelID, "https://i.kym-cdn.com/entries/icons/original/000/041/943/1aa1blank.png")
 	}
 }
