@@ -4,12 +4,14 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"math/rand"
 	"os"
 	"os/signal"
 	"strings"
 	"syscall"
 	"time"
 
+	parse "MelvinBot/src/csv"
 	"MelvinBot/src/stats"
 	"MelvinBot/src/store"
 	"MelvinBot/src/util"
@@ -64,6 +66,7 @@ func (bot Bot) RunBot() {
 	bot.discord.AddHandler(glounge)
 	bot.discord.AddHandler(iiwii)
 	bot.discord.AddHandler(lethimcook)
+	bot.discord.AddHandler(randomQuote)
 
 	err = bot.discord.Open()
 	if err != nil {
@@ -191,7 +194,24 @@ func lethimcook(s *disc.Session, m *disc.MessageCreate) {
 		return // only for nisha's discord
 	}
 
-	if strings.Contains(strings.ToLower(m.Message.Content), "let") && strings.Contains(strings.ToLower(m.Message.Content), "cook") {
+	if strings.Contains(strings.ToLower(m.Message.Content), "cook") {
 		s.ChannelMessageSend(m.ChannelID, "https://i.kym-cdn.com/entries/icons/original/000/041/943/1aa1blank.png")
 	}
+}
+
+func randomQuote(s *disc.Session, m *disc.MessageCreate) {
+	if m.Author.ID == s.State.User.ID {
+		return // it me
+	}
+
+	if m.GuildID != util.Wolfcord_id {
+		return // only for nisha's discord
+	}
+
+	if m.Content != "!quote" {
+		return
+	}
+
+	allQuotes, _ := parse.ParseAndDedupCsv()
+	s.ChannelMessageSend(m.ChannelID, allQuotes[rand.Intn(len(allQuotes))])
 }
